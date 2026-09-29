@@ -11,7 +11,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install optional shell checker
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Check shell syntax and style
