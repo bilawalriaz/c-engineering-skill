@@ -1,5 +1,13 @@
 # C defect evaluations
 
-These are small teaching and regression specimens, not a benchmark claiming to measure model quality. `cases/defect-matrix.md` maps each requested defect to a bad specimen, a correction, and the evidence likely to find it. Detection depends on compiler, target, executed path, and analyzer configuration.
+`cases/defect-matrix.md` maps defect specimens to checks that can detect them.
+These are regression examples; they do not measure model quality.
 
-Run `./run-evals.sh` from the repository root. The suite verifies that fixed examples compile with GCC/Clang when present, runs the fixed byte-span parser on boundary inputs, and confirms a deliberately overflowing program is diagnosed by an available ASan/UBSan runtime when the runtime works on the host. If the host cannot run sanitizers, it reports that part as skipped. Intentionally buggy sources are never included in ordinary builds.
+Run `evals/run-evals.sh` from the repository root. It compiles fixed examples with
+available GCC/Clang commands, checks an ASan heap-overflow finding and runs a
+bounded libFuzzer check when supported. Corpus mutations stay in a temporary
+directory. `tests/test-scripts.sh` runs parser boundary tests and checks analyzer
+failure status, fatal UBSan findings, sanitizer skips and the fuzz helper.
+
+The [PS5 review cases](cases/ps5-review.md) are manual behavioral evaluations.
+They require no console access and must not be reported as hardware tests.

@@ -21,7 +21,7 @@ if [ -n "${C_STANDARD:-}" ]; then
     fi
 fi
 for flag in -fno-common -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wconversion -Wsign-conversion -Wundef -Wcast-align -Wdouble-promotion -Wnull-dereference -Wimplicit-fallthrough -Wwrite-strings; do
-    if printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsyntax-only "$flag" - >/dev/null 2>&1; then
+    if printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsyntax-only -Werror "$flag" - >/dev/null 2>&1; then
         set -- "$@" "$flag"
     else
         ce_note "skip unsupported flag: $flag"

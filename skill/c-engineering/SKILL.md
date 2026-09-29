@@ -1,9 +1,9 @@
 ---
 name: c-engineering
-description: Apply rigorous, evidence-driven C engineering to C code changes, reviews, debugging, porting, and performance work. Use when modifying or assessing C code, build configuration, FFI, systems code, or embedded code.
+description: Write, review, debug, port, and verify C code. Use when modifying or assessing C code, build configuration, FFI, systems code, or embedded code.
 ---
 
-# C Engineering
+# C engineering
 
 Use this skill whenever the task changes or evaluates C code, its build, or its boundary with another language or platform. A successful compile is necessary evidence, not proof of correct C. Prefer observable compiler, runtime, test, analyzer, and platform-documentation evidence to model intuition.
 
@@ -17,7 +17,7 @@ Use this skill whenever the task changes or evaluates C code, its build, or its 
 6. Build with project settings and useful diagnostics; run relevant tests, analyzers, sanitizers, then boundary tests or fuzzing when inputs or memory logic warrant it. Do not force warnings-as-errors on third-party code or hide new warnings with casts/suppressions.
 7. Inspect the final diff and report what ran, what failed or was skipped, and remaining uncertainty.
 
-Evidence is contextual: use this practical order—(1) compiler/runtime results, (2) sanitizer and test results, (3) static analysis, (4) authoritative language/platform/library documentation, (5) repository invariants, (6) reasoning. A clean run only covers executed paths and configurations. When observed behavior conflicts with the language or platform contract, investigate the mismatch rather than treating the observation as a new guarantee.
+Use language and platform contracts to decide what is valid; use builds, tests, and analysis to check the implementation. A passing run cannot override a contract or establish behavior on another target.
 
 ## Proof obligations
 
@@ -38,9 +38,9 @@ Consider only relevant items, but actively check ownership/lifetime, nullability
 
 Avoid broad rewrites, gratuitous API or dialect changes, assuming allocation or I/O succeeds, direct assignment of `realloc`, `sizeof(pointer)` as allocation length, arbitrary sleeps, treating `volatile` as synchronization, assertions for recoverable untrusted-input failures, silent truncation, weakening tests, or claiming correctness from compilation alone.
 
-## Deterministic tooling
+## Verification tools
 
-Run `scripts/verify.sh --doctor` to discover capabilities, `--quick` for the repository build/test path, and `--deep` to add available analysis and sanitizer-capable builds. `--doctor --json` emits a machine-readable capability summary. Verification commands preserve normal output and failure status; skipped checks are reported rather than presented as passes.
+Prefer the project's documented verification commands, especially for cross-compilation. Run `scripts/verify.sh --doctor` to discover capabilities, `--quick` for the repository build/test path, and `--deep` to add available analysis and sanitizer-capable builds. `--doctor --json` emits a machine-readable capability summary. Verification commands preserve normal output and failure status; skipped checks are reported rather than presented as passes.
 
 The focused compile, sanitizer, analyzer, and fuzz helpers preserve the compiler's default dialect unless `C_STANDARD` is explicitly set. When repository inspection establishes the dialect, pass it to focused tools, for example `C_STANDARD=c17 scripts/compile-check.sh file.c`.
 
@@ -54,4 +54,5 @@ Before running repository-defined build/test code from an unfamiliar source, rea
 - Environments: [POSIX](references/posix.md), [concurrency](references/concurrency.md), [portability](references/portability.md), [ABI/FFI](references/abi-and-ffi.md), [embedded](references/embedded-c.md), [systems](references/systems-c.md), [constrained platforms](references/constrained-platforms.md)
 - Evidence and tooling: [build systems](references/build-systems.md), [testing](references/testing.md), [sanitizers](references/sanitizers.md), [fuzzing](references/fuzzing.md), [debugging](references/debugging.md), [static analysis](references/static-analysis.md), [performance](references/performance.md), [agent execution safety](references/agent-execution-safety.md)
 - Task recipes: [implement](workflows/implement-feature.md), [fix](workflows/fix-bug.md), [review](workflows/review-patch.md), [debug](workflows/debug-crash.md), [memory corruption](workflows/investigate-memory-corruption.md), [refactor](workflows/refactor.md), [optimize](workflows/optimize.md), [concurrency](workflows/investigate-concurrency.md), [port](workflows/port-code.md), [audit](workflows/audit-existing-code.md)
-- Choose an environment profile in [`../../profiles/`](../../profiles/).
+- PS5 homebrew: [target and loader checks](references/ps5-homebrew.md), including the firmware 13.60 companion workflow.
+- Choose an environment profile in [`profiles/`](profiles/).

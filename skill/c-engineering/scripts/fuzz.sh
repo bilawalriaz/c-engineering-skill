@@ -22,10 +22,11 @@ if [ -n "${C_STANDARD:-}" ]; then
         ce_die "clang does not support requested C_STANDARD=$C_STANDARD"
     fi
 fi
-if ! printf 'int main(void) { return 0; }\n' | clang "$@" -x c -fsanitize=fuzzer,address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
+if ! printf '#include <stddef.h>\nint LLVMFuzzerTestOneInput(const unsigned char *p, size_t n) { (void)p; (void)n; return 0; }\n' | clang "$@" -x c -fsanitize=fuzzer,address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
     ce_die 'installed clang does not provide libFuzzer with ASan+UBSan'
 fi
-clang "$@" -g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined "$target" -o "$binary"
+"$ce_tmp/probe" -runs=1 >/dev/null 2>&1 || ce_die 'libFuzzer runtime cannot execute on this host'
+clang "$@" -g -O1 -fno-sanitize-recover=all -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined "$target" -o "$binary"
 if [ -n "$corpus" ]; then
     [ -d "$corpus" ] || ce_die "corpus directory not found: $corpus"
     "$binary" -max_total_time=10 "$corpus"

@@ -61,8 +61,8 @@ case $project in
         else ce_note 'skip tests: ctest is unavailable'; fi
         if [ "$mode" = deep ]; then
             compiler=$(ce_compiler) || compiler=
-            if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c -fsanitize=address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
-                cmake -S . -B "$ce_tmp/san" -DCMAKE_C_COMPILER="$compiler" -DCMAKE_C_FLAGS='-g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined' -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=address,undefined'
+            if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c -fsanitize=address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1 && "$ce_tmp/probe" >/dev/null 2>&1; then
+                cmake -S . -B "$ce_tmp/san" -DCMAKE_C_COMPILER="$compiler" -DCMAKE_C_FLAGS='-g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined' -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=address,undefined'
                 cmake --build "$ce_tmp/san" --parallel
                 if ce_have ctest; then ctest --test-dir "$ce_tmp/san" --output-on-failure
                 else ce_note 'skip sanitizer tests: ctest is unavailable'; fi
@@ -79,7 +79,7 @@ case $project in
         meson test -C "$ce_tmp/build" --print-errorlogs
         if [ "$mode" = deep ]; then
             if meson configure "$ce_tmp/build" 2>/dev/null | grep -q 'b_sanitize'; then
-                meson setup "$ce_tmp/san" . -Db_sanitize=address,undefined
+                meson setup "$ce_tmp/san" . -Db_sanitize=address,undefined -Db_sanitize_recover=false
                 meson compile -C "$ce_tmp/san"
                 meson test -C "$ce_tmp/san" --print-errorlogs
             else ce_note 'skip sanitizer build: Meson sanitizer option unavailable'; fi

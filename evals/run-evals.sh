@@ -2,10 +2,12 @@
 set -eu
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 scripts=$root/skill/c-engineering/scripts
+# shellcheck source=skill/c-engineering/scripts/common.sh
+. "$scripts/common.sh"
 passed=0
 skipped=0
 
-for compiler in gcc clang; do
+for compiler in "${CC:-cc}" gcc clang; do
     if command -v "$compiler" >/dev/null 2>&1; then
         for source in "$root"/examples/fixed/*.c; do
             case $source in *fuzz_bytes.c) continue ;; esac
@@ -20,9 +22,12 @@ done
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/c-evals.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
-compiler=$(command -v "${CC:-}" 2>/dev/null || command -v clang || command -v gcc || true)
+compiler=$(ce_compiler) || ce_die 'no C compiler found'
+"$compiler" -std=c11 -Wall -Wextra -Wpedantic "$root/tests/test-parser.c" -o "$tmp/parser"
+"$tmp/parser"
+passed=$((passed + 1))
 
-if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c -fsanitize=address,undefined -o "$tmp/probe" - >/dev/null 2>&1; then
+if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c -fsanitize=address,undefined -o "$tmp/probe" - >/dev/null 2>&1 && "$tmp/probe" >/dev/null 2>&1; then
     if CC="$compiler" "$scripts/sanitize.sh" "$root/examples/buggy/heap_overflow.c" address,undefined >"$tmp/sanitizer.log" 2>&1; then
         printf 'FAIL sanitizer did not detect heap overflow\n' >&2
         exit 1
@@ -39,9 +44,11 @@ else
     skipped=$((skipped + 1))
 fi
 
-if command -v clang >/dev/null 2>&1 && printf 'int main(void){return 0;}\n' | clang -x c -fsanitize=fuzzer,address,undefined -o "$tmp/fuzz-probe" - >/dev/null 2>&1; then
+if command -v clang >/dev/null 2>&1 && printf '#include <stddef.h>\nint LLVMFuzzerTestOneInput(const unsigned char *p, size_t n) { (void)p; (void)n; return 0; }\n' | clang -x c -fsanitize=fuzzer,address,undefined -o "$tmp/fuzz-probe" - >/dev/null 2>&1 && "$tmp/fuzz-probe" -runs=1 >/dev/null 2>&1; then
     clang -g -O1 -fsanitize=fuzzer,address,undefined "$root/examples/fixed/fuzz_bytes.c" -o "$tmp/fuzzer"
-    "$tmp/fuzzer" -runs=100 "$root/evals/cases" >/dev/null 2>&1
+    mkdir "$tmp/corpus"
+    cp "$root/evals/cases/defect-matrix.md" "$tmp/corpus/seed"
+    "$tmp/fuzzer" -runs=100 "$tmp/corpus" >/dev/null 2>&1
     passed=$((passed + 1))
 else
     printf 'SKIP libFuzzer runtime unavailable\n'

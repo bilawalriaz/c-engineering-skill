@@ -25,7 +25,12 @@ if [ -n "${C_STANDARD:-}" ]; then
 fi
 if ! printf 'int main(void) { return 0; }\n' | "$compiler" "$@" -x c -fsanitize="$sanitizers" -g -o "$ce_tmp/probe" - >/dev/null 2>&1; then
     ce_note "skip: $compiler does not support -fsanitize=$sanitizers on this host"
-    exit 0
+    exit 77
 fi
-"$compiler" "$@" -g -O1 -fno-omit-frame-pointer -fsanitize="$sanitizers" "$source_file" -o "$binary"
+if ! "$ce_tmp/probe" >"$ce_tmp/probe.log" 2>&1; then
+    ce_note "skip: sanitizer runtime cannot execute on this host"
+    cat "$ce_tmp/probe.log" >&2
+    exit 77
+fi
+"$compiler" "$@" -g -O1 -fno-sanitize-recover=all -fno-omit-frame-pointer -fsanitize="$sanitizers" "$source_file" -o "$binary"
 "$binary"

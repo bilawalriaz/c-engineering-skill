@@ -12,3 +12,5 @@ Sanitizers instrument a build and report selected defects reached at runtime; th
 Optimization can change, fold, or even eliminate code whose behavior is already undefined before the runtime symptom you expected is observed. If a suspected defect disappears under one optimization level, do not treat that as evidence of safety; inspect generated behavior and reproduce with an appropriate debug/instrumented configuration while keeping a realistic optimized configuration in the test matrix.
 
 Do not ship sanitizer runtimes as production hardening without platform-specific review.
+
+`sanitize.sh` runs a minimal instrumented program before the requested test. It returns 77 if the runtime cannot build or run, and uses `-fno-sanitize-recover=all` so a UBSan report cannot end in a successful test exit. Callers must distinguish 77 from a pass and from a finding.

@@ -18,11 +18,11 @@ fi
 if [ -f "$build_dir/compile_commands.json" ] && ce_have run-clang-tidy; then
     ran=1
     ce_note "static analysis: run-clang-tidy using $build_dir/compile_commands.json"
-    run-clang-tidy -p "$build_dir" || status=$?
+    run-clang-tidy -checks="${C_TIDY_CHECKS:-clang-analyzer-core.*,clang-analyzer-unix.*,clang-analyzer-deadcode.*}" -warnings-as-errors='*' -p "$build_dir" || status=$?
 elif [ -f "$build_dir/compile_commands.json" ] && ce_have clang-tidy && [ -f "$target" ]; then
     ran=1
     ce_note "static analysis: clang-tidy using $build_dir/compile_commands.json"
-    clang-tidy -p "$build_dir" "$target" || status=$?
+    clang-tidy -checks="${C_TIDY_CHECKS:-clang-analyzer-core.*,clang-analyzer-unix.*,clang-analyzer-deadcode.*}" -warnings-as-errors='*' -p "$build_dir" "$target" || status=$?
 elif [ -f "$target" ] && ce_have clang; then
     case $target in
         *.c)
@@ -31,12 +31,12 @@ elif [ -f "$target" ] && ce_have clang; then
             if [ -n "${C_STANDARD:-}" ]; then
                 std_flag="-std=$C_STANDARD"
                 if printf 'int main(void) { return 0; }\n' | clang -x c -fsyntax-only "$std_flag" - >/dev/null 2>&1; then
-                    clang --analyze "$std_flag" "$target" || status=$?
+                    clang --analyze -Xanalyzer -analyzer-werror -Xanalyzer -analyzer-output=text "$std_flag" "$target" || status=$?
                 else
                     ce_die "clang does not support requested C_STANDARD=$C_STANDARD"
                 fi
             else
-                clang --analyze "$target" || status=$?
+                clang --analyze -Xanalyzer -analyzer-werror -Xanalyzer -analyzer-output=text "$target" || status=$?
             fi
             ;;
         *) ce_note 'skip: Clang analysis requires a C source file or compilation database' ;;

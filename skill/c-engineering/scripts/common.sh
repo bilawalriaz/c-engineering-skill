@@ -7,7 +7,9 @@ ce_tmpdir() {
     mktemp -d "${TMPDIR:-/tmp}/c-engineering.XXXXXX"
 }
 ce_compiler() {
-    if [ -n "${CC:-}" ] && ce_have "$CC"; then printf '%s\n' "$CC"
+    if [ -n "${CC:-}" ]; then
+        ce_have "$CC" || ce_die "compiler not found: $CC"
+        printf '%s\n' "$CC"
     elif ce_have clang; then printf '%s\n' clang
     elif ce_have gcc; then printf '%s\n' gcc
     elif ce_have cc; then printf '%s\n' cc

@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+SKILL_ROOT = ROOT / "skill" / "c-engineering"
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 LINK_RE = re.compile(r"!?(?:\[[^\]]*\])\(([^)]+)\)")
 
@@ -71,6 +72,12 @@ def main() -> int:
             except ValueError:
                 failures.append(
                     f"{md.relative_to(ROOT)}: local link escapes repository: {raw}"
+                )
+                continue
+
+            if md.is_relative_to(SKILL_ROOT) and not target.is_relative_to(SKILL_ROOT):
+                failures.append(
+                    f"{md.relative_to(ROOT)}: link escapes installable skill: {raw}"
                 )
                 continue
 
