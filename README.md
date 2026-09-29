@@ -111,9 +111,12 @@ Missing optional tools are reported as skipped. Build/test/analyzer failures rem
 Run:
 
 ```sh
+python3 tests/check-markdown-links.py
 tests/test-scripts.sh
 evals/run-evals.sh
 ```
+
+The link checker validates repository-local Markdown links so progressive-disclosure routes in `SKILL.md` cannot silently rot.
 
 The eval corpus includes examples for buffer errors, ownership/lifetime failures, integer-size mistakes, missing termination, realloc misuse, partial I/O, leaks, uninitialized data, overlap, races, and parser defects. The executable suite intentionally stays small and reliable; [`evals/cases/defect-matrix.md`](evals/cases/defect-matrix.md) records which evidence is expected for the wider set.
 
