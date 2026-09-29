@@ -3,7 +3,9 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 # shellcheck source=skill/c-engineering/scripts/common.sh
 . "$script_dir/common.sh"
-[ "$#" -ge 1 ] && [ "$#" -le 2 ] || ce_die "usage: $0 FUZZ_TARGET.c [CORPUS_DIR]"
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    ce_die "usage: $0 FUZZ_TARGET.c [CORPUS_DIR]"
+fi
 target=$1
 corpus=${2:-}
 [ -f "$target" ] || ce_die "target not found: $target"

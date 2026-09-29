@@ -3,7 +3,9 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 # shellcheck source=skill/c-engineering/scripts/common.sh
 . "$script_dir/common.sh"
-[ "$#" -ge 1 ] && [ "$#" -le 2 ] || ce_die "usage: $0 FILE.c [compiler]"
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    ce_die "usage: $0 FILE.c [compiler]"
+fi
 source_file=$1
 compiler=${2:-${CC:-}}
 [ -f "$source_file" ] || ce_die "source file not found: $source_file"
