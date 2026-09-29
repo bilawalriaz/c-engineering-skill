@@ -44,7 +44,7 @@ if command -v clang >/dev/null 2>&1 && printf 'int main(void){return 0;}\n' | cl
     "$tmp/fuzzer" -runs=100 "$root/evals/cases" >/dev/null 2>&1
     passed=$((passed + 1))
 else
-    printf 'SKIP libFuzzer runtime unavaile\n'
+    printf 'SKIP libFuzzer runtime unavailable\n'
     skipped=$((skipped + 1))
 fi
 
