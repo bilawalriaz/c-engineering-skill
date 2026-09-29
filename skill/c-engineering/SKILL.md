@@ -49,7 +49,7 @@ Before running repository-defined build/test code from an unfamiliar source, rea
 ## Reference map
 
 - C semantics and UB: [language semantics](references/language-semantics.md), [undefined behavior](references/undefined-behavior.md), [initialization](references/initialization.md)
-- Memory and data representation: [memory ownership](references/memory-ownership.md), [pointers/aliasing/alignment](references/pointers-aliasing-alignment.md), [integer safety](references/integer-safety.md), [buffers and strings](references/bufffers-and-strings.md)
+- Memory and data representation: [memory ownership](references/memory-ownership.md), [pointers/aliasing/alignment](references/pointers-aliasing-alignment.md), [integer safety](references/integer-safety.md), [buffers and strings](references/buffers-and-strings.md)
 - Contracts and cleanup: [error handling](references/error-handling.md), [resource management](references/resource-management.md), [API design](references/api-design.md)
 - Environments: [POSIX](references/posix.md), [concurrency](references/concurrency.md), [portability](references/portability.md), [ABI/FFI](references/abi-and-ffi.md), [embedded](references/embedded-c.md), [systems](references/systems-c.md), [constrained platforms](references/constrained-platforms.md)
 - Evidence and tooling: [build systems](references/build-systems.md), [testing](references/testing.md), [sanitizers](references/sanitizers.md), [fuzzing](references/fuzzing.md), [debugging](references/debugging.md), [static analysis](references/static-analysis.md), [performance](references/performance.md), [agent execution safety](references/agent-execution-safety.md)
