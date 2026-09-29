@@ -1,0 +1,19 @@
+# Local build output
+build/
+cmake-build-*/
+compile_commands.json
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+core
+core.*
+
+# Fuzzing output
+corpus/
+artifacts/
+crash-*
+timeout-*
+leak-*

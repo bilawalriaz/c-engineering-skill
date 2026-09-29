@@ -1,0 +1,29 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  scripts-and-evals:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install optional shell checker
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Check shell syntax and style
+        run: |
+          find skill/c-engineering/scripts evals tests -name '*.sh' -print0 | xargs -0 -n1 sh -n
+          shellcheck -x -s sh skill/c-engineering/scripts/*.sh evals/*.sh tests/*.sh
+      - name: Script integration tests
+        run: tests/test-scripts.sh
+      - name: Run defect evaluations
+        run: evals/run-evals.sh
+        env:
+          CC: ${{ matrix.cc }}
+      - name: Verify sample project deeply
+        working-directory: examples/sample-project
+        run: ../../skill/c-engineering/scripts/verify.sh --deep

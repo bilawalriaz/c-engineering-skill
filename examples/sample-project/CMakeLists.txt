@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.12)
+project(c_engineering_sample C)
+enable_testing()
+add_executable(sample main.c)
+add_test(NAME sample COMMAND sample)
