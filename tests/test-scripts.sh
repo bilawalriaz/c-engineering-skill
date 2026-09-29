@@ -23,8 +23,8 @@ int answer(void)
 }
 C
 "$scripts/compile-check.sh" "$tmp/standard.c" "${CC:-gcc}"
-C_STANDARD=c99 "$scripts/compile-check.sh" "$tmp/standard.c" "${CC:-gcc}"
-if C_STANDARD=not-a-real-c-standard "$scripts/compile-check.sh" "$tmp/standard.c" "${CC:-gcc}" >/dev/null 2>&1; then
+env C_STANDARD=c99 "$scripts/compile-check.sh" "$tmp/standard.c" "${CC:-gcc}"
+if env C_STANDARD=not-a-real-c-standard "$scripts/compile-check.sh" "$tmp/standard.c" "${CC:-gcc}" >/dev/null 2>&1; then
     printf 'expected unsupported explicit C standard to fail\n' >&2
     exit 1
 fi

@@ -21,6 +21,8 @@ jobs:
         run: |
           find skill/c-engineering/scripts evals tests -name '*.sh' -print0 | xargs -0 -n1 sh -n
           shellcheck -x -s sh skill/c-engineering/scripts/*.sh evals/*.sh tests/*.sh
+      - name: Check internal Markdown links
+        run: python3 tests/check-markdown-links.py
       - name: Script integration tests
         run: tests/test-scripts.sh
         env:
