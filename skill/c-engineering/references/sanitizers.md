@@ -7,4 +7,8 @@ Sanitizers instrument a build and report selected defects reached at runtime; th
 - **ThreadSanitizer (TSan):** data races in instrumented code. Use a separate build; TSan generally cannot be combined with ASan and has substantial memory/runtime cost.
 - **MemorySanitizer (MSan):** uninitialized reads; effective only when relevant code and dependencies are instrumented, which can make it difficult to use on ordinary system libraries.
 
-`-fsanitize=address,undefined` is a useful combined development configuration where supported. Test the sanitizer runtime with a minimal program before interpreting a failed build as a source defect. A clean report covers only executed paths. Do not ship sanitizer runtimes as production hardening without platform-specific review.
+`-fsanitize=address,undefined` is a useful combined development configuration where supported. Test the sanitizer runtime with a minimal program before interpreting a failed build as a source defect. A clean report covers only executed paths.
+
+Optimization can change, fold, or even eliminate code whose behavior is already undefined before the runtime symptom you expected is observed. If a suspected defect disappears under one optimization level, do not treat that as evidence of safety; inspect generated behavior and reproduce with an appropriate debug/instrumented configuration while keeping a realistic optimized configuration in the test matrix.
+
+Do not ship sanitizer runtimes as production hardening without platform-specific review.

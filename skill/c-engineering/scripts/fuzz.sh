@@ -13,11 +13,22 @@ ce_have clang || ce_die 'libFuzzer mode requires clang'
 ce_tmp=$(ce_tmpdir) || ce_die 'cannot create temporary directory'
 binary=$ce_tmp/fuzzer
 trap 'rm -rf "$ce_tmp"' EXIT HUP INT TERM
-if ! printf 'int main(void) { return 0; }\n' | clang -x c -fsanitize=fuzzer,address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
+set --
+if [ -n "${C_STANDARD:-}" ]; then
+    std_flag="-std=$C_STANDARD"
+    if printf 'int main(void) { return 0; }\n' | clang -x c -fsyntax-only "$std_flag" - >/dev/null 2>&1; then
+        set -- "$@" "$std_flag"
+    else
+        ce_die "clang does not support requested C_STANDARD=$C_STANDARD"
+    fi
+fi
+if ! printf 'int main(void) { return 0; }\n' | clang "$@" -x c -fsanitize=fuzzer,address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
     ce_die 'installed clang does not provide libFuzzer with ASan+UBSan'
 fi
-clang -g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined "$target" -o "$binary"
-if [ -n "$corpus" ]; then [ -d "$corpus" ] || ce_die "corpus directory not found: $corpus"; fi
-if [ -n "$corpus" ]; then "$binary" -max_total_time=10 "$corpus"
-else "$binary" -max_total_time=10
+clang "$@" -g -O1 -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined "$target" -o "$binary"
+if [ -n "$corpus" ]; then
+    [ -d "$corpus" ] || ce_die "corpus directory not found: $corpus"
+    "$binary" -max_total_time=10 "$corpus"
+else
+    "$binary" -max_total_time=10
 fi

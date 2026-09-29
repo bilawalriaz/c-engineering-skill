@@ -16,19 +16,23 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+if [ "$json" -eq 1 ] && [ "$mode" != doctor ]; then
+    ce_die '--json is currently supported only with --doctor'
+fi
 if [ "$mode" = doctor ]; then
     project=$("$script_dir/detect-project.sh" .)
     cc=$(ce_compiler || true)
     if [ "$json" -eq 1 ]; then
-        printf '{"project":"%s","compiler":"%s","tools":{"make":%s,"cmake":%s,"meson":%s,"autotools":%s,"cppcheck":%s,"clang_tidy":%s,"scan_build":%s,"shellcheck":%s}}\n' \
+        printf '{"project":"%s","compiler":"%s","tools":{"make":%s,"cmake":%s,"ctest":%s,"meson":%s,"ninja":%s,"autotools":%s,"cppcheck":%s,"clang_tidy":%s,"scan_build":%s,"shellcheck":%s}}\n' \
             "$project" "${cc:-unavailable}" \
             "$(ce_have make && printf true || printf false)" "$(ce_have cmake && printf true || printf false)" \
-            "$(ce_have meson && printf true || printf false)" "$(ce_have autoreconf && printf true || printf false)" \
+            "$(ce_have ctest && printf true || printf false)" "$(ce_have meson && printf true || printf false)" \
+            "$(ce_have ninja && printf true || printf false)" "$(ce_have autoreconf && printf true || printf false)" \
             "$(ce_have cppcheck && printf true || printf false)" "$(ce_have clang-tidy && printf true || printf false)" \
             "$(ce_have scan-build && printf true || printf false)" "$(ce_have shellcheck && printf true || printf false)"
     else
         printf 'Project: %s\nCompiler: %s\n' "$project" "${cc:-unavailable}"
-        for tool in make cmake meson autoreconf cppcheck clang-tidy scan-build shellcheck; do
+        for tool in make cmake ctest meson ninja autoreconf cppcheck clang-tidy scan-build shellcheck; do
             if ce_have "$tool"; then printf '  %-12s available (%s)\n' "$tool" "$(command -v "$tool")"
             else printf '  %-12s skipped (not installed)\n' "$tool"; fi
         done
@@ -37,6 +41,7 @@ if [ "$mode" = doctor ]; then
 fi
 project=$("$script_dir/detect-project.sh" .)
 ce_note "verification mode: $mode; project: $project"
+ce_note 'note: native build/test commands are repository-defined; inspect unfamiliar repositories before executing them'
 case $project in
     make)
         ce_have make || ce_die 'Makefile found but make is unavailable'
@@ -48,46 +53,50 @@ case $project in
     cmake)
         ce_have cmake || ce_die 'CMakeLists.txt found but cmake is unavailable'
         ce_tmp=$(ce_tmpdir) || ce_die 'cannot create temporary directory'
-        source_root=$(pwd)
-        verify_status=0
         verify_cleanup() { verify_status=$?; if [ -n "${ce_tmp:-}" ] && [ -d "$ce_tmp" ]; then if [ "$verify_status" -eq 0 ]; then rm -rf "$ce_tmp"; else ce_note "temporary build retained at $ce_tmp"; fi; fi; exit "$verify_status"; }
         trap verify_cleanup EXIT HUP INT TERM
         cmake -S . -B "$ce_tmp/build" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
         cmake --build "$ce_tmp/build" --parallel
-        ctest --test-dir "$ce_tmp/build" --output-on-failure || { ce_note 'test command failed (or project defines no tests)'; exit 1; }
+        if ce_have ctest; then ctest --test-dir "$ce_tmp/build" --output-on-failure
+        else ce_note 'skip tests: ctest is unavailable'; fi
         if [ "$mode" = deep ]; then
             compiler=$(ce_compiler) || compiler=
             if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c -fsanitize=address,undefined -o "$ce_tmp/probe" - >/dev/null 2>&1; then
-                cmake -S . -B "$ce_tmp/san" -DCMAKE_C_COMPILER="$compiler" -DCMAKE_C_FLAGS='-g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined'
+                cmake -S . -B "$ce_tmp/san" -DCMAKE_C_COMPILER="$compiler" -DCMAKE_C_FLAGS='-g -O1 -fno-omit-frame-pointer -fsanitize=address,undefined' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address,undefined' -DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=address,undefined'
                 cmake --build "$ce_tmp/san" --parallel
-                ctest --test-dir "$ce_tmp/san" --output-on-failure
+                if ce_have ctest; then ctest --test-dir "$ce_tmp/san" --output-on-failure
+                else ce_note 'skip sanitizer tests: ctest is unavailable'; fi
             else ce_note 'skip sanitizer build: ASan+UBSan compiler runtime unavailable'; fi
         fi
         ;;
     meson)
         ce_have meson || ce_die 'meson.build found but meson is unavailable'
         ce_tmp=$(ce_tmpdir) || ce_die 'cannot create temporary directory'
-        source_root=$(pwd)
-        verify_status=0
         verify_cleanup() { verify_status=$?; if [ -n "${ce_tmp:-}" ] && [ -d "$ce_tmp" ]; then if [ "$verify_status" -eq 0 ]; then rm -rf "$ce_tmp"; else ce_note "temporary build retained at $ce_tmp"; fi; fi; exit "$verify_status"; }
         trap verify_cleanup EXIT HUP INT TERM
         meson setup "$ce_tmp/build" .
         meson compile -C "$ce_tmp/build"
         meson test -C "$ce_tmp/build" --print-errorlogs
         if [ "$mode" = deep ]; then
-            if meson configure --help 2>&1 | grep -q b_sanitize; then
-                meson setup "$ce_tmp/san" . -Db_sanitize=address,undefined -Db_lundef=false
+            if meson configure "$ce_tmp/build" 2>/dev/null | grep -q 'b_sanitize'; then
+                meson setup "$ce_tmp/san" . -Db_sanitize=address,undefined
                 meson compile -C "$ce_tmp/san"
                 meson test -C "$ce_tmp/san" --print-errorlogs
             else ce_note 'skip sanitizer build: Meson sanitizer option unavailable'; fi
         fi
+        ;;
+    ninja)
+        ce_have ninja || ce_die 'build.ninja found but ninja is unavailable'
+        ninja
+        if ninja -t targets 2>/dev/null | grep -q '^test:'; then ninja test
+        else ce_note 'skip tests: no Ninja test target detected'; fi
+        if [ "$mode" = deep ]; then ce_note 'skip instrumented build: standalone Ninja flags are generator/project-specific; use the generating build system or focused sanitizer tooling'; fi
         ;;
     autotools)
         ce_have make || ce_die 'Autotools project found but make is unavailable'
         [ -x ./configure ] || ce_die 'configure script is missing; run autoreconf according to project docs first'
         ce_tmp=$(ce_tmpdir) || ce_die 'cannot create temporary directory'
         source_root=$(pwd)
-        verify_status=0
         verify_cleanup() { verify_status=$?; if [ -n "${ce_tmp:-}" ] && [ -d "$ce_tmp" ]; then if [ "$verify_status" -eq 0 ]; then rm -rf "$ce_tmp"; else ce_note "temporary build retained at $ce_tmp"; fi; fi; exit "$verify_status"; }
         trap verify_cleanup EXIT HUP INT TERM
         (cd "$ce_tmp" && "$source_root/configure")

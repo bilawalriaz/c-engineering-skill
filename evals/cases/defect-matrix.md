@@ -21,4 +21,4 @@ Each row maps a runnable specimen to a corrected example. Compile-fail and sanit
 | Data race | `buggy/race.c` | `fixed/race.c` | ThreadSanitizer and synchronization proof |
 | Parser out-of-bounds/alignment | `buggy/fuzz_bytes.c` | `fixed/fuzz_bytes.c` | libFuzzer+ASan/UBSan; fixed parser has empty/short/oversize unit cases |
 
-Sanitizers do not detect every conversion, ownership, race, or cleanup defect on every host. Several cases also require controlled failure injection or platform-specific runtime support beyond this small suite.
+Sanitizers do not detect every conversion, ownership, race, or cleanup defect on every host. Several cases also require controlled failure injection or platform-specific runtime support beyond this small suite. Tiny examples containing undefined behavior may also be transformed or eliminated by optimization before the expected runtime symptom occurs; a missing sanitizer report is not by itself a pass.

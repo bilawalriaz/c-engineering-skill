@@ -12,12 +12,24 @@ compiler=${2:-${CC:-}}
 if [ -z "$compiler" ]; then compiler=$(ce_compiler) || ce_die 'no C compiler found'; fi
 ce_have "$compiler" || ce_die "compiler not found: $compiler"
 set --
-for flag in -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wconversion -Wsign-conversion -Wundef -Wcast-align -Wdouble-promotion -Wnull-dereference -Wimplicit-fallthrough -Wwrite-strings; do
+if [ -n "${C_STANDARD:-}" ]; then
+    std_flag="-std=$C_STANDARD"
+    if printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsyntax-only "$std_flag" - >/dev/null 2>&1; then
+        set -- "$@" "$std_flag"
+    else
+        ce_die "compiler does not support requested C_STANDARD=$C_STANDARD"
+    fi
+fi
+for flag in -fno-common -Wall -Wextra -Wpedantic -Wformat=2 -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wconversion -Wsign-conversion -Wundef -Wcast-align -Wdouble-promotion -Wnull-dereference -Wimplicit-fallthrough -Wwrite-strings; do
     if printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsyntax-only "$flag" - >/dev/null 2>&1; then
         set -- "$@" "$flag"
     else
         ce_note "skip unsupported flag: $flag"
     fi
 done
-ce_note "compile check: $compiler $source_file"
-"$compiler" "-std=${C_STANDARD:-c11}" -fsyntax-only -fno-common "$@" "$source_file"
+if [ -n "${C_STANDARD:-}" ]; then
+    ce_note "compile check: $compiler (std=$C_STANDARD) $source_file"
+else
+    ce_note "compile check: $compiler (compiler default dialect) $source_file"
+fi
+"$compiler" "$@" -fsyntax-only "$source_file"

@@ -14,9 +14,18 @@ ce_tmp=$(ce_tmpdir) || ce_die 'cannot create temporary directory'
 binary=$ce_tmp/sanitized
 cleanup() { rm -rf "$ce_tmp"; }
 trap cleanup EXIT HUP INT TERM
-if ! printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsanitize="$sanitizers" -g -o "$ce_tmp/probe" - >/dev/null 2>&1; then
+set --
+if [ -n "${C_STANDARD:-}" ]; then
+    std_flag="-std=$C_STANDARD"
+    if printf 'int main(void) { return 0; }\n' | "$compiler" -x c -fsyntax-only "$std_flag" - >/dev/null 2>&1; then
+        set -- "$@" "$std_flag"
+    else
+        ce_die "compiler does not support requested C_STANDARD=$C_STANDARD"
+    fi
+fi
+if ! printf 'int main(void) { return 0; }\n' | "$compiler" "$@" -x c -fsanitize="$sanitizers" -g -o "$ce_tmp/probe" - >/dev/null 2>&1; then
     ce_note "skip: $compiler does not support -fsanitize=$sanitizers on this host"
     exit 0
 fi
-"$compiler" -std=c11 -g -O1 -fno-omit-frame-pointer -fsanitize="$sanitizers" "$source_file" -o "$binary"
+"$compiler" "$@" -g -O1 -fno-omit-frame-pointer -fsanitize="$sanitizers" "$source_file" -o "$binary"
 "$binary"

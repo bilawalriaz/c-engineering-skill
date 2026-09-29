@@ -28,7 +28,16 @@ elif [ -f "$target" ] && ce_have clang; then
         *.c)
             ran=1
             ce_note "static analysis: clang --analyze $target (project build flags are not available)"
-            clang --analyze -std="${C_STANDARD:-c11}" "$target" || status=$?
+            if [ -n "${C_STANDARD:-}" ]; then
+                std_flag="-std=$C_STANDARD"
+                if printf 'int main(void) { return 0; }\n' | clang -x c -fsyntax-only "$std_flag" - >/dev/null 2>&1; then
+                    clang --analyze "$std_flag" "$target" || status=$?
+                else
+                    ce_die "clang does not support requested C_STANDARD=$C_STANDARD"
+                fi
+            else
+                clang --analyze "$target" || status=$?
+            fi
             ;;
         *) ce_note 'skip: Clang analysis requires a C source file or compilation database' ;;
     esac
