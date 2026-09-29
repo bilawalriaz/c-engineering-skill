@@ -84,7 +84,7 @@ if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c
         printf 'sanitizer failed to detect known heap overflow\n' >&2
         exit 1
     fi
-    grep -E 'AddressSanitizer|heap-buffer-overflow|ERROR: AddressSanitizer' "$tmp/san.out" >/dev/null || {
+    grep -E 'AddressSanitizer|heap-buffer-overflow|runtime error:.*insufficient space' "$tmp/san.out" >/dev/null || {
         printf 'sanitizer command failed without expected finding\n' >&2
         cat "$tmp/san.out" >&2
         exit 1

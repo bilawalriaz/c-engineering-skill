@@ -32,7 +32,7 @@ if [ -n "$compiler" ] && printf 'int main(void){return 0;}\n' | "$compiler" -x c
         printf 'FAIL sanitizer did not detect heap overflow\n' >&2
         exit 1
     fi
-    if grep -E 'AddressSanitizer|heap-buffer-overflow|ERROR: AddressSanitizer' "$tmp/sanitizer.log" >/dev/null; then
+    if grep -E 'AddressSanitizer|heap-buffer-overflow|runtime error:.*insufficient space' "$tmp/sanitizer.log" >/dev/null; then
         passed=$((passed + 1))
     else
         printf 'FAIL sanitizer execution produced no expected diagnostic\n' >&2
